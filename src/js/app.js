@@ -6,27 +6,7 @@ App = {
   init: function() {
     return App.initWeb3();
   },
-  // init: async function() {
-  //   // Load pets.
-  //   $.getJSON('../pets.json', function(data) {
-  //     var petsRow = $('#petsRow');
-  //     var petTemplate = $('#petTemplate');
-
-  //     for (i = 0; i < data.length; i ++) {
-  //       petTemplate.find('.panel-title').text(data[i].name);
-  //       petTemplate.find('img').attr('src', data[i].picture);
-  //       petTemplate.find('.pet-breed').text(data[i].breed);
-  //       petTemplate.find('.pet-age').text(data[i].age);
-  //       petTemplate.find('.pet-location').text(data[i].location);
-  //       petTemplate.find('.btn-adopt').attr('data-id', data[i].id);
-
-  //       petsRow.append(petTemplate.html());
-  //     }
-  //   });
-
-  //   return await App.initWeb3();
-  // },
-
+  
   initWeb3: function() {
     //TODO: refactor conditional
     if(typeof web3 !== 'undefined'){
@@ -73,6 +53,9 @@ App = {
         var candidatesResults = $("#candidatesResults");
         candidatesResults.empty();
 
+        var candidatesSelect = $("#candidatesSelect");
+        candidatesSelect.empty();
+
         for(var i = 1; i<= candidatesCount; i++){
           electionInstance.candidates(i).then(function(candidate){
             var id = candidate[0];
@@ -81,19 +64,39 @@ App = {
             //render Candidate Result
             var candidatetemplate = "<tr><td>" + id  + "</td><td>" +name + "</td><td>" +voteCount + "</td><tr>"
             candidatesResults.append(candidatetemplate);
-            console.log(candidate[1]);
+
+            //Render candidate ballot option
+            var candidateOption = "<option value='" + id  + "'>" +name + "</option>"
+            candidatesSelect.append(candidateOption);
+
+            // console.log(candidate[1]);
           });
         }
-
+        return electionInstance.voters(App.account);
+      }).then(function(hasVoted) {
+          if(hasVoted){
+            $('form').hide();
+          }
         loader.hide();
         content.show();
       }).catch(function(error){
         console.warn(error);
       });
+    },
+
+    castVote: function() {
+      var candidateId = $('#candidatesSelect').val();
+      App.contracts.Election.deployed().then(function(instance){
+        return instance.vote(candidateId, {from: App.account});
+      }).then(function(result){
+        // Wait for votes to update
+        $("#content").hide();
+        $("#loader").show();
+      }).catch(function(){
+        console.error(err);
+      })
     }
-  };
-
-
+};
 //   markAdopted: function() {
 //     /*
 //      * Replace me...
